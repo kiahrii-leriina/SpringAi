@@ -1,14 +1,22 @@
-# Start from an OpenJDK 21 base image
-FROM eclipse-temurin:21-jdk-alpine
-
-# Set the working directory inside the container
+FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /app
 
-# Copy the JAR file dynamically (any jar from target/)
-COPY target/*.jar app.jar
+COPY pom.xml mvnw ./
+COPY .mvn .mvn
+RUN ./mvnw dependency:go-offline
 
-# Expose the port your Spring Boot app runs on
-EXPOSE 8080
+COPY src src
+RUN ./mvnw package -DskipTests
 
-# Command to run the JAR file
-ENTRYPOINT ["java", "-jar", "app.jar"]
+FROM eclipse-temurin:21-jdk
+WORKDIR /app
+
+COPY --from=builder /app/target/*.jar app.jar
+COPY wait-for-ollama.sh wait-for-ollama.sh
+RUN chmod +x wait-for-ollama.sh
+
+
+COPY wait-for-ollama.sh ./wait-for-ollama.sh
+RUN chmod +x ./wait-for-ollama.sh
+
+ENTRYPOINT ["./wait-for-ollama.sh", "http://ollama:11434", "java", "-jar", "app.jar"]

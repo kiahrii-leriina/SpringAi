@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  backend:
+    build: .
+    container_name: springai-backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - ollama
+    environment:
+      SPRING_AI_OLLAMA_BASE_URL: "http://ollama:11434"
+      SPRING_AI_OLLAMA_MODEL: "deepseek-r1:1.5b"
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    command: ["serve"]
+
+volumes:
+  ollama-models:
